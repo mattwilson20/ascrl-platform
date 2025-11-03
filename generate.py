@@ -101,3 +101,4 @@ with open(f"{OUTPUT}/index.html", "w") as f:
     f.write(html)
 
 print("https://mattwilson20.github.io/ascrl-platform/")
+
