@@ -1,10 +1,9 @@
-# generate.py — RUN AFTER !batch_race_data to auto-update site
+# generate.py — RUN AFTER !batch_race_data
 import sqlite3
 import os
 from jinja2 import Template
 from datetime import datetime
 
-# Paths
 DB = 'ascrl.db'
 OUTPUT = 'docs'
 os.makedirs(OUTPUT, exist_ok=True)
@@ -12,17 +11,27 @@ os.makedirs(OUTPUT, exist_ok=True)
 conn = sqlite3.connect(DB)
 c = conn.cursor()
 
-# Fetch data
+# CUP STANDINGS
 c.execute("SELECT driver_name, points, wins, avg_finish FROM standings WHERE series='Cup' ORDER BY points DESC")
 cup = c.fetchall()
+
+# TRUCK STANDINGS
 c.execute("SELECT driver_name, points, wins, avg_finish FROM standings WHERE series='Truck' ORDER BY points DESC")
 truck = c.fetchall()
-c.execute("SELECT track, date, winner FROM races WHERE series='Cup' ORDER BY date")
+
+# SCHEDULE + WINNERS (JOIN races + winners)
+c.execute("""
+    SELECT r.track, r.date, w.winner 
+    FROM races r 
+    LEFT JOIN winners w ON r.track = w.track AND r.series = w.series 
+    WHERE r.series='Cup' 
+    ORDER BY r.date
+""")
 schedule = c.fetchall()
 
 conn.close()
 
-# Template (your NASCAR design)
+# HTML TEMPLATE
 template = """
 <!DOCTYPE html>
 <html>
@@ -45,7 +54,7 @@ template = """
   <div class="container">
     <h1>ASCRL LIVE</h1>
     <p class="refresh">Updated: {{ now }}</p>
-    
+
     <div class="series">
       <h2>CUP SERIES</h2>
       <table>
@@ -55,7 +64,7 @@ template = """
         {% endfor %}
       </table>
     </div>
-    
+
     <div class="series">
       <h2>TRUCK SERIES</h2>
       <table>
@@ -65,7 +74,7 @@ template = """
         {% endfor %}
       </table>
     </div>
-    
+
     <div class="series">
       <h2>SCHEDULE</h2>
       <table>
@@ -91,4 +100,4 @@ html = Template(template).render(
 with open(f"{OUTPUT}/index.html", "w") as f:
     f.write(html)
 
-print("https://github.com/mattwilson20/ascrl-platform")
+print("https://mattwilson20.github.io/ascrl-platform/")
